@@ -1,110 +1,101 @@
 import type { ZshConfig, AliasItem, PathVarItem, EnvVarItem, PluginItem, ZshOptionItem } from '../utils/configSchema';
 
 function generatePluginBlocks(plugins: PluginItem[]): string[] {
-  // 按加载方式和等待时间分组插件
-  const groups: { [key: string]: PluginItem[] } = {};
-  
-  plugins.forEach(plugin => {
-    let groupKey: string = plugin.loadType;
-    if (plugin.loadType === 'wait' || plugin.loadType === 'wait lucid') {
-      const waitTime = plugin.waitTime || '0';
-      groupKey = `${plugin.loadType}:${waitTime}`;
-    }
-    
-    if (!groups[groupKey]) {
-      groups[groupKey] = [];
-    }
-    groups[groupKey].push(plugin);
-  });
-
   const blocks: string[] = [];
   
-  Object.entries(groups).forEach(([groupKey, groupPlugins]) => {
-    if (groupKey.startsWith('wait') || groupKey.startsWith('wait lucid')) {
+  plugins.forEach((plugin) => {
+    // if (groupKey.startsWith('wait') || groupKey.startsWith('wait lucid')) {
       // 对于wait和wait lucid，使用for语法
-      const [loadType, waitTime] = groupKey.split(':');
+      // const [loadType, waitTime] = groupKey.split(':');
       
       // 检查是否有复杂配置的插件
-      const complexPlugins = groupPlugins.filter(p => p.ice && Object.keys(p.ice).length > 0);
-      const simplePlugins = groupPlugins.filter(p => !p.ice || Object.keys(p.ice).length === 0);
+      // const complexPlugins = groupPlugins.filter(p => p.ice && Object.keys(p.ice).length > 0);
+      // const simplePlugins = groupPlugins.filter(p => !p.ice || Object.keys(p.ice).length === 0);
       
       // 处理简单插件，使用for语法
-      if (simplePlugins.length > 0) {
-        const pluginNames = simplePlugins.map(p => p.name).join(' \\\n\t');
-        let zinitCommand;
-        if (loadType === 'wait') {
-          zinitCommand = `zinit wait"${waitTime}" for \\\n\t${pluginNames}`;
-        } else {
-          zinitCommand = `zinit wait"${waitTime}" lucid for \\\n\t${pluginNames}`;
-        }
-        blocks.push(zinitCommand);
-      }
+    //   if (simplePlugins.length > 0) {
+    //     const pluginNames = simplePlugins.map(p => p.name).join(' \\\n\t');
+    //     let zinitCommand = `zinit "${waitTime}" for \\\n\t${pluginNames}`;
+    //     if (loadType === 'wait') {
+    //       zinitCommand = `zinit wait"${waitTime}" for \\\n\t${pluginNames}`;
+    //     } else {
+    //       zinitCommand = `zinit wait"${waitTime}" lucid for \\\n\t${pluginNames}`;
+    //     }
+    //     blocks.push(zinitCommand);
+    //   }
       
-      // 处理复杂插件，也使用for语法，但需要先设置ice
-      if (complexPlugins.length > 0) {
-        complexPlugins.forEach(plugin => {
-          const iceModifiers = buildIceModifiers(plugin);
-          const conditions = buildConditions(plugin);
-          const allModifiers = [...iceModifiers, ...conditions];
-          const iceLine = allModifiers.length > 0 ? `zinit ice ${allModifiers.join(' ')}\n` : '';
+    //   // 处理复杂插件，也使用for语法，但需要先设置ice
+    //   if (complexPlugins.length > 0) {
+    //     complexPlugins.forEach(plugin => {
+    //       const iceModifiers = buildIceModifiers(plugin);
+    //       const iceLine = iceModifiers.length > 0 ? `zinit ice ${iceModifiers.join(' ')}\n` : '';
           
-          let zinitCommand;
-          if (loadType === 'wait') {
-            zinitCommand = `zinit wait"${waitTime}" for ${plugin.name}`;
-          } else {
-            zinitCommand = `zinit wait"${waitTime}" lucid for ${plugin.name}`;
-          }
+    //       let zinitCommand;
+    //       if (loadType === 'wait') {
+    //         zinitCommand = `zinit wait"${waitTime}" for ${plugin.name}`;
+    //       } else {
+    //         zinitCommand = `zinit wait"${waitTime}" lucid for ${plugin.name}`;
+    //       }
           
-          blocks.push(`${iceLine}${zinitCommand}${plugin.description ? `  # ${plugin.description}` : ''}`);
-        });
-      }
-    } else {
+    //       blocks.push(`${iceLine}${zinitCommand}${plugin.description ? `  # ${plugin.description}` : ''}`);
+    //     });
+    //   }
+    // } else {
       // 对于其他加载方式，单独处理每个插件
-      groupPlugins.forEach(plugin => {
+      // groupPlugins.forEach(plugin => {
         const iceModifiers = buildIceModifiers(plugin);
-        const conditions = buildConditions(plugin);
-        const allModifiers = [...iceModifiers, ...conditions];
-        const iceLine = allModifiers.length > 0 ? `zinit ice ${allModifiers.join(' ')}\n` : '';
-        const zinitCommand = `zinit ${plugin.loadType} ${plugin.name}`;
+        // const iceLine = iceModifiers.length > 0 ? `zinit  ${iceModifiers.join(' ')}\n` : '';
+        const zinitCommand = `zinit ${iceModifiers.join(' ')+" "}for ${plugin.name}`;
         
-        blocks.push(`${iceLine}${zinitCommand}${plugin.description ? `  # ${plugin.description}` : ''}`);
-      });
-    }
+        blocks.push(`${zinitCommand}${plugin.description ? `  # ${plugin.description}` : ''}`);
+      // });
+    // }
   });
   
   return blocks;
 }
 
+// 辅助函数：转义单引号，将字符串包装在单引号中
+function escapeSingleQuotes(value: string): string {
+  // 将单引号替换为 '\'' (结束当前单引号，插入转义的单引号，开始新的单引号)
+  const escaped = value.replace(/'/g, "'\\''");
+  return `'${escaped}'`;
+}
+
 function buildIceModifiers(plugin: PluginItem): string[] {
   const modifiers = [];
   if (plugin.ice) {
-    if (plugin.ice.from) modifiers.push(`from"${plugin.ice.from}"`);
-    if (plugin.ice.as) modifiers.push(`as"${plugin.ice.as}"`);
-    if (plugin.ice.pick) modifiers.push(`pick"${plugin.ice.pick}"`);
-    if (plugin.ice.atinit) modifiers.push(`atinit"${plugin.ice.atinit}"`);
-    if (plugin.ice.atload) modifiers.push(`atload"${plugin.ice.atload}"`);
-    if (plugin.ice.atclone) modifiers.push(`atclone"${plugin.ice.atclone}"`);
+    console.log(plugin);
+    if (plugin.ice.from) modifiers.push(`from${escapeSingleQuotes(plugin.ice.from)}`);
+    if (plugin.ice.as) modifiers.push(`as${escapeSingleQuotes(plugin.ice.as)}`);
+    if (plugin.ice.pick) modifiers.push(`pick${escapeSingleQuotes(plugin.ice.pick)}`);
+    if (plugin.ice.atinit) modifiers.push(`atinit${escapeSingleQuotes(plugin.ice.atinit)}`);
+    if (plugin.ice.atload) modifiers.push(`atload${escapeSingleQuotes(plugin.ice.atload)}`);
+    if (plugin.ice.atclone) modifiers.push(`atclone${escapeSingleQuotes(plugin.ice.atclone)}`);
     if (plugin.ice.depth) modifiers.push(`depth${plugin.ice.depth}`);
     if (plugin.ice.blockf) modifiers.push('blockf');
     if (plugin.ice.compile) modifiers.push('compile');
-    if (plugin.ice.bindmap) modifiers.push(`bindmap"${plugin.ice.bindmap}"`);
-    if (plugin.ice.mv) modifiers.push(`mv"${plugin.ice.mv}"`);
-    if (plugin.ice.bpick) modifiers.push(`bpick"${plugin.ice.bpick}"`);
+    if (plugin.ice.wait !== undefined) {
+      if (plugin.ice.wait === 0) {
+        modifiers.push('wait');
+      } else {
+        modifiers.push(`wait${escapeSingleQuotes(plugin.ice.wait.toString())}`);
+      }
+    }
+    if (plugin.ice.lucid) modifiers.push('lucid');
+    if (plugin.ice.light_mode) modifiers.push('light-mode');
+    if (plugin.ice.if) modifiers.push(`if${escapeSingleQuotes(plugin.ice.if)}`);
+    if (plugin.ice.has) modifiers.push(`has${escapeSingleQuotes(plugin.ice.has)}`);
+    if (plugin.ice.on) modifiers.push(`on${escapeSingleQuotes(plugin.ice.on)}`);
+    if (plugin.ice.bindmap) modifiers.push(`bindmap${escapeSingleQuotes(plugin.ice.bindmap)}`);
+    if (plugin.ice.mv) modifiers.push(`mv${escapeSingleQuotes(plugin.ice.mv)}`);
+    if (plugin.ice.bpick) modifiers.push(`bpick${escapeSingleQuotes(plugin.ice.bpick)}`);
+    if (plugin.ice.atpull) modifiers.push(`atpull${escapeSingleQuotes(plugin.ice.atpull)}`);
   }
   return modifiers;
 }
 
-function buildConditions(plugin: PluginItem): string[] {
-  const conditions = [];
-  if (plugin.conditions) {
-    if (plugin.conditions.wait) conditions.push(`wait"${plugin.conditions.wait}"`);
-    if (plugin.conditions.lucid) conditions.push('lucid');
-    if (plugin.conditions.if) conditions.push(`if"${plugin.conditions.if}"`);
-    if (plugin.conditions.has) conditions.push(`has"${plugin.conditions.has}"`);
-    if (plugin.conditions.on) conditions.push(`on"${plugin.conditions.on}"`);
-  }
-  return conditions;
-}
+
 
 export function generateZshrc(config: ZshConfig): string {
   // 1. zinit初始化

@@ -23,8 +23,7 @@ export interface EnvVarItem {
 export interface PluginItem {
   name: string;
   description?: string;
-  loadType: 'load' | 'light' | 'snippet' | 'wait' | 'wait lucid';
-  waitTime?: string; // 可选的等待时间，仅在loadType为wait或wait lucid时使用
+  // loadType: 'load' | 'light' | 'snippet' | 'wait' | 'wait lucid';
   ice?: {
     from?: string;
     as?: string;
@@ -35,21 +34,16 @@ export interface PluginItem {
     depth?: number;
     blockf?: boolean;
     compile?: boolean;
-    wait?: string;
+    wait?: number;
     lucid?: boolean;
+    light_mode?: boolean;
     if?: string;
     has?: string;
     on?: string;
     bindmap?: string;
     mv?: string;
     bpick?: string;
-  };
-  conditions?: {
-    wait?: string;
-    lucid?: boolean;
-    if?: string;
-    has?: string;
-    on?: string;
+    atpull?: string;
   };
 }
 

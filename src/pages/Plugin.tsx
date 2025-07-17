@@ -32,8 +32,8 @@ const Plugin: React.FC = () => {
         <div>
           <div className="font-medium">{text}</div>
           <div className="text-xs text-gray-500">
-            {record.loadType}
-            {(record.loadType === 'wait' || record.loadType === 'wait lucid') && record.waitTime && ` (${record.waitTime}s)`}
+            {/* {record.loadType}
+            {(record.loadType === 'wait' || record.loadType === 'wait lucid') && record.waitTime && ` (${record.waitTime}s)`} */}
             {record.ice?.from && ` (${record.ice.from})`}
           </div>
         </div>

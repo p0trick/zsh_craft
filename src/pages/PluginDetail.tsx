@@ -23,16 +23,18 @@ const PluginDetail: React.FC = () => {
       form.setFieldsValue({
         name: currentPlugin.name,
         description: currentPlugin.description,
-        loadType: currentPlugin.loadType || 'load',
-        waitTime: currentPlugin.waitTime,
+        // loadType: currentPlugin.loadType || 'load',
+        // waitTime: currentPlugin.waitTime,
         ...currentPlugin.ice,
-        ...currentPlugin.conditions,
       });
     } else {
       form.setFieldsValue({
-        loadType: 'load',
+        // loadType: 'load',
         blockf: false,
         compile: false,
+        wait: false,
+        lucid: false,
+        lightMode: false,
       });
     }
   }, [currentPlugin, form]);
@@ -45,8 +47,8 @@ const PluginDetail: React.FC = () => {
       const plugin: PluginItem = {
         name: values.name,
         description: values.description,
-        loadType: values.loadType,
-        waitTime: (values.loadType === 'wait' || values.loadType === 'wait lucid') ? values.waitTime : undefined,
+        // loadType: values.loadType,
+        // waitTime: (values.loadType === 'wait' || values.loadType === 'wait lucid') ? values.waitTime : undefined,
         ice: {
           from: values.from,
           as: values.as,
@@ -57,14 +59,16 @@ const PluginDetail: React.FC = () => {
           depth: values.depth,
           blockf: values.blockf,
           compile: values.compile,
-          bindmap: values.bindmap,
-          mv: values.mv,
-          bpick: values.bpick,
-        },
-        conditions: {
+          wait: values.wait,
+          // waitTime: values.waitTime,
+          lucid: values.lucid,
+          light_mode: values.light_mode,
           if: values.if,
           has: values.has,
           on: values.on,
+          bindmap: values.bindmap,
+          mv: values.mv,
+          bpick: values.bpick,
         },
       };
 
@@ -131,7 +135,7 @@ const PluginDetail: React.FC = () => {
               <Input placeholder="插件的功能描述" />
             </Form.Item>
 
-            <Form.Item
+            {/* <Form.Item
               label="加载方式"
               name="loadType"
               rules={[{ required: true, message: '请选择加载方式' }]}
@@ -143,7 +147,7 @@ const PluginDetail: React.FC = () => {
                 <Option value="wait">wait - 延迟加载</Option>
                 <Option value="wait lucid">wait lucid - 静默延迟加载</Option>
               </Select>
-            </Form.Item>
+            </Form.Item> */}
 
             <Form.Item
               noStyle
@@ -237,29 +241,57 @@ const PluginDetail: React.FC = () => {
               <Form.Item label="编译脚本 (compile)" name="compile" valuePropName="checked">
                 <Switch />
               </Form.Item>
+              <Form.Item label="等待 (wait)" name="wait" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item label="静默模式 (lucid)" name="lucid" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+              <Form.Item label="浅色模式 (light-mode)" name="lightMode" valuePropName="checked">
+                <Switch />
+              </Form.Item>
             </Space>
-          </div>
 
-          <Divider />
-
-          {/* 加载条件 */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4">加载条件</h3>
-            
-            <Form.Item label="条件判断 (if)" name="if">
-              <TextArea 
-                rows={3} 
-                placeholder="例如: [[ -n $commands[fzf] ]]"
-              />
+            <Form.Item
+              noStyle
+              shouldUpdate={(prevValues, currentValues) => prevValues.wait !== currentValues.wait}
+            >
+              {({ getFieldValue }) => {
+                const waitEnabled = getFieldValue('wait');
+                
+                return waitEnabled ? (
+                  <Form.Item
+                    label="等待时间 (wait)"
+                    name="waitTime"
+                    extra="输入数字表示秒数，例如: 1 表示1秒后加载（可选）"
+                  >
+                    <Input placeholder="例如: 1" />
+                  </Form.Item>
+                ) : null;
+              }}
             </Form.Item>
 
-            <Form.Item label="命令检查 (has)" name="has">
-              <Input placeholder="例如: docker" />
-            </Form.Item>
+            <Divider />
 
-            <Form.Item label="触发条件 (on)" name="on">
-              <Input placeholder="例如: root" />
-            </Form.Item>
+            {/* 加载条件 */}
+            <div className="mb-4">
+              <h4 className="text-md font-semibold mb-3">加载条件</h4>
+              
+              <Form.Item label="条件判断 (if)" name="if">
+                <TextArea 
+                  rows={3} 
+                  placeholder="例如: [[ -n $commands[fzf] ]]"
+                />
+              </Form.Item>
+
+              <Form.Item label="命令检查 (has)" name="has">
+                <Input placeholder="例如: docker" />
+              </Form.Item>
+
+              <Form.Item label="触发条件 (on)" name="on">
+                <Input placeholder="例如: root" />
+              </Form.Item>
+            </div>
           </div>
         </Form>
       </Card>
