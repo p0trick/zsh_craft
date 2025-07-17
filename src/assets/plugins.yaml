@@ -1,0 +1,9 @@
+- name: zsh-users/zsh-autosuggestions
+  default_ice: wait'1' lucid
+  description: 命令自动建议
+- name: romkatv/powerlevel10k
+  default_ice: depth=1 lucid
+  description: 高性能主题
+- name: zsh-users/zsh-completions
+  default_ice: blockf
+  description: 补全插件

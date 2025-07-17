@@ -1,0 +1,9 @@
+- name: vim
+  alias: nvim
+  description: 使用nvim替代vim
+- name: ll
+  alias: ls -alF
+  description: 列出详细文件列表
+- name: grep
+  alias: grep --color=auto
+  description: 彩色高亮grep输出 
