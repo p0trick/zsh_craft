@@ -7,11 +7,11 @@ import Home from './pages/Home';
 import ZinitInit from './pages/ZinitInit';
 import Alias from './pages/Alias';
 import EnvVar from './pages/EnvVar';
+import PathVar from './pages/PathVar';
 import Plugin from './pages/Plugin';
 import PluginDetail from './pages/PluginDetail';
 import ZshOption from './pages/ZshOption';
 import InitScript from './pages/InitScript';
-import ImportExportModal from './components/ImportExportModal';
 import ConfigPreviewModal from './components/ConfigPreviewModal';
 import { generateZshrc } from './utils/zshrcGenerator';
 import { useConfig } from './context/ConfigContext';
@@ -19,13 +19,13 @@ import { useConfig } from './context/ConfigContext';
 const { Sider, Header, Content } = Layout;
 
 const App: React.FC = () => {
-  const [importExportOpen, setImportExportOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const { config, setConfig } = useConfig();
 
   // 处理顶部栏操作
-  const handleImport = () => setImportExportOpen(true);
-  const handleExport = () => setImportExportOpen(true);
+  const handleImport = (importedConfig: any) => {
+    setConfig(importedConfig);
+  };
   const handlePreview = () => setPreviewOpen(true);
   const handleDownload = () => {
     const zshrc = generateZshrc(config);
@@ -68,9 +68,9 @@ const App: React.FC = () => {
           <Header className="bg-gray-700 p-0">
             <Topbar
               onImport={handleImport}
-              onExport={handleExport}
               onPreview={handlePreview}
               onDownload={handleDownload}
+              config={config}
             />
           </Header>
           <Layout>
@@ -82,6 +82,7 @@ const App: React.FC = () => {
                 <Route path="/" element={<Home />} />
                 <Route path="/zinit" element={<ZinitInit />} />
                 <Route path="/alias" element={<Alias />} />
+                <Route path="/pathvar" element={<PathVar />} />
                 <Route path="/env" element={<EnvVar />} />
                 <Route path="/plugin" element={<Plugin />} />
               <Route path="/plugin/:pluginIndex" element={<PluginDetail />} />
@@ -91,13 +92,6 @@ const App: React.FC = () => {
             </Content>
           </Layout>
         </Layout>
-        {/* 导入/导出弹窗 */}
-        <ImportExportModal
-          open={importExportOpen}
-          onClose={() => setImportExportOpen(false)}
-          config={config}
-          onImport={setConfig}
-        />
         {/* zshrc预览弹窗 */}
         <ConfigPreviewModal
           open={previewOpen}

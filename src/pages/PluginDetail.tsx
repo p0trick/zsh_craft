@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Select, Switch, Space, Divider, message } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, Form, Input, Button, Select, Switch, Space, Divider, message, Modal, Table, Popconfirm } from 'antd';
+import { ArrowLeftOutlined, SaveOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useConfig } from '../context/ConfigContext';
-import type { PluginItem } from '../utils/configSchema';
+import type { PluginItem, EnvVarItem } from '../utils/configSchema';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -13,19 +13,38 @@ const PluginDetail: React.FC = () => {
   const { pluginIndex } = useParams<{ pluginIndex: string }>();
   const { config, updateConfig } = useConfig();
   const [form] = Form.useForm();
+  const [envForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [isEnvModalVisible, setIsEnvModalVisible] = useState(false);
+  const [editingEnvItem, setEditingEnvItem] = useState<EnvVarItem | null>(null);
 
   const isEdit = pluginIndex !== 'new';
   const currentPlugin = isEdit ? config.plugins[parseInt(pluginIndex!)] : undefined;
 
+  // 获取当前插件的环境变量
+  const pluginEnvVars = useMemo(() => {
+    if (!currentPlugin?.name) return [];
+    return config.envVars.filter(item => item.group === currentPlugin.name);
+  }, [config.envVars, currentPlugin?.name]);
+
   useEffect(() => {
     if (currentPlugin) {
+      let waitTime = 0;
+      let wait = false;
+      if (currentPlugin?.ice?.wait !== undefined){
+        wait = true
+        if (currentPlugin?.ice?.wait !== 0){
+          waitTime = currentPlugin?.ice?.wait
+        }
+      }
       form.setFieldsValue({
         name: currentPlugin.name,
         description: currentPlugin.description,
         // loadType: currentPlugin.loadType || 'load',
         // waitTime: currentPlugin.waitTime,
         ...currentPlugin.ice,
+        wait,
+        waitTime
       });
     } else {
       form.setFieldsValue({
@@ -43,7 +62,8 @@ const PluginDetail: React.FC = () => {
     try {
       setLoading(true);
       const values = await form.validateFields();
-      
+      console.log("values", values.light_mode)
+      let wait = values.wait ? values.waitTime ? values.waitTime : 0 : undefined;
       const plugin: PluginItem = {
         name: values.name,
         description: values.description,
@@ -59,8 +79,7 @@ const PluginDetail: React.FC = () => {
           depth: values.depth,
           blockf: values.blockf,
           compile: values.compile,
-          wait: values.wait,
-          // waitTime: values.waitTime,
+          wait: wait,
           lucid: values.lucid,
           light_mode: values.light_mode,
           if: values.if,
@@ -92,6 +111,109 @@ const PluginDetail: React.FC = () => {
   const handleBack = () => {
     navigate('/plugin');
   };
+
+  // 环境变量相关函数
+  const handleAddEnvVar = () => {
+    if (!currentPlugin?.name) {
+      message.warning('请先保存插件基本信息');
+      return;
+    }
+    setEditingEnvItem(null);
+    envForm.resetFields();
+    setIsEnvModalVisible(true);
+  };
+
+  const handleEditEnvVar = (item: EnvVarItem) => {
+    setEditingEnvItem(item);
+    envForm.setFieldsValue({
+      key: item.key,
+      value: item.value
+    });
+    setIsEnvModalVisible(true);
+  };
+
+  const handleDeleteEnvVar = (key: string) => {
+    const newEnvVars = config.envVars.filter(item => item.key !== key);
+    updateConfig({ envVars: newEnvVars });
+    message.success('删除成功');
+  };
+
+  const handleSaveEnvVar = async () => {
+    try {
+      const values = await envForm.validateFields();
+      const newItem: EnvVarItem = {
+        key: values.key,
+        value: values.value,
+        group: currentPlugin?.name
+      };
+
+      let newEnvVars: EnvVarItem[];
+      if (editingEnvItem) {
+        // 编辑模式
+        newEnvVars = config.envVars.map(item => 
+          item.key === editingEnvItem.key ? newItem : item
+        );
+      } else {
+        // 新增模式
+        newEnvVars = [...config.envVars, newItem];
+      }
+
+      updateConfig({ envVars: newEnvVars });
+      setIsEnvModalVisible(false);
+      message.success(editingEnvItem ? '更新成功' : '添加成功');
+    } catch (error) {
+      console.error('保存失败:', error);
+    }
+  };
+
+  const handleCancelEnvVar = () => {
+    setIsEnvModalVisible(false);
+    setEditingEnvItem(null);
+    envForm.resetFields();
+  };
+
+  // 环境变量表格列定义
+  const envColumns = [
+    {
+      title: '变量名',
+      dataIndex: 'key',
+      key: 'key',
+    },
+    {
+      title: '变量值',
+      dataIndex: 'value',
+      key: 'value',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: EnvVarItem) => (
+        <Space>
+          <Button 
+            type="text" 
+            icon={<EditOutlined />} 
+            onClick={() => handleEditEnvVar(record)}
+            size="small"
+          >
+            编辑
+          </Button>
+          <Popconfirm 
+            title="确定删除这个环境变量？" 
+            onConfirm={() => handleDeleteEnvVar(record.key)}
+          >
+            <Button 
+              type="text" 
+              icon={<DeleteOutlined />} 
+              danger
+              size="small"
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -133,41 +255,6 @@ const PluginDetail: React.FC = () => {
             
             <Form.Item label="插件说明" name="description">
               <Input placeholder="插件的功能描述" />
-            </Form.Item>
-
-            {/* <Form.Item
-              label="加载方式"
-              name="loadType"
-              rules={[{ required: true, message: '请选择加载方式' }]}
-            >
-              <Select>
-                <Option value="load">load - 完整加载</Option>
-                <Option value="light">light - 轻量加载</Option>
-                <Option value="snippet">snippet - 代码片段</Option>
-                <Option value="wait">wait - 延迟加载</Option>
-                <Option value="wait lucid">wait lucid - 静默延迟加载</Option>
-              </Select>
-            </Form.Item> */}
-
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) => prevValues.loadType !== currentValues.loadType}
-            >
-              {({ getFieldValue }) => {
-                const loadType = getFieldValue('loadType');
-                const showWaitTime = loadType === 'wait' || loadType === 'wait lucid';
-                
-                return showWaitTime ? (
-                  <Form.Item
-                    label="等待时间"
-                    name="waitTime"
-                    rules={[{ required: true, message: '请输入等待时间' }]}
-                    extra="输入数字表示秒数，例如: 1 表示1秒后加载"
-                  >
-                    <Input placeholder="例如: 1" />
-                  </Form.Item>
-                ) : null;
-              }}
             </Form.Item>
           </div>
 
@@ -241,13 +328,13 @@ const PluginDetail: React.FC = () => {
               <Form.Item label="编译脚本 (compile)" name="compile" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Form.Item label="等待 (wait)" name="wait" valuePropName="checked">
+              <Form.Item label="延时加载(wait)" name="wait" valuePropName="checked">
                 <Switch />
               </Form.Item>
               <Form.Item label="静默模式 (lucid)" name="lucid" valuePropName="checked">
                 <Switch />
               </Form.Item>
-              <Form.Item label="浅色模式 (light-mode)" name="lightMode" valuePropName="checked">
+              <Form.Item label="轻量模式 (light-mode)" name="light_mode" valuePropName="checked">
                 <Switch />
               </Form.Item>
             </Space>
@@ -293,8 +380,89 @@ const PluginDetail: React.FC = () => {
               </Form.Item>
             </div>
           </div>
+
+          <Divider />
+
+          {/* 环境变量设置 */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">环境变量设置</h3>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={handleAddEnvVar}
+                disabled={!currentPlugin?.name}
+              >
+                添加环境变量
+              </Button>
+            </div>
+            
+            {currentPlugin?.name ? (
+              <div>
+                <p className="text-gray-600 mb-3">
+                  当前插件: <span className="font-medium">{currentPlugin.name}</span>
+                  {pluginEnvVars.length > 0 && (
+                    <span className="ml-2 text-sm text-gray-500">
+                      (共 {pluginEnvVars.length} 个环境变量)
+                    </span>
+                  )}
+                </p>
+                
+                {pluginEnvVars.length > 0 ? (
+                  <Table
+                    columns={envColumns}
+                    dataSource={pluginEnvVars}
+                    rowKey="key"
+                    pagination={false}
+                    size="small"
+                    className="bg-gray-50 rounded-lg"
+                  />
+                ) : (
+                  <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                    暂无环境变量，点击上方按钮添加
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                请先保存插件基本信息，然后才能添加环境变量
+              </div>
+            )}
+          </div>
         </Form>
       </Card>
+
+      {/* 环境变量编辑弹窗 */}
+      <Modal
+        title={editingEnvItem ? '编辑环境变量' : '添加环境变量'}
+        open={isEnvModalVisible}
+        onOk={handleSaveEnvVar}
+        onCancel={handleCancelEnvVar}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form form={envForm} layout="vertical">
+          <Form.Item
+            label="变量名"
+            name="key"
+            rules={[{ required: true, message: '请输入变量名' }]}
+          >
+            <Input placeholder="例如: FZF_DEFAULT_OPTS" />
+          </Form.Item>
+          
+          <Form.Item
+            label="变量值"
+            name="value"
+            rules={[{ required: true, message: '请输入变量值' }]}
+          >
+            <Input placeholder="例如: --height 40%" />
+          </Form.Item>
+          
+          <div className="text-sm text-gray-500">
+            此环境变量将自动归属于插件: <span className="font-medium">{currentPlugin?.name}</span>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 };

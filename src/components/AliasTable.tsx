@@ -19,7 +19,6 @@ const AliasTable: React.FC<AliasTableProps> = ({ value, onChange }) => {
   useEffect(() => {
     loadYamlFile<AliasItem[]>('/src/assets/alias.yaml').then((data) => {
       setCommonAlias(data);
-      console.log('commonAlias', data);
     }).catch(() => {
       setCommonAlias([]);
       // 调用antd的错误通知
@@ -71,7 +70,6 @@ const AliasTable: React.FC<AliasTableProps> = ({ value, onChange }) => {
       editable: true,
       render: (_: any, record: AliasItem) => {
         if (!isEditing(record)) return record.name;
-        console.log('commonAlias', commonAlias);
         return (
           <Form.Item name="name" style={{ margin: 0 }} rules={[{ required: true, message: '请输入原命令' }]}> 
             <Select

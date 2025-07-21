@@ -18,6 +18,7 @@ export interface PathVarItem {
 export interface EnvVarItem {
   key: string;
   value: string;
+  group?: string; // 新增组字段
 }
 
 export interface PluginItem {

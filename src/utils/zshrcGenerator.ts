@@ -45,7 +45,8 @@ function generatePluginBlocks(plugins: PluginItem[]): string[] {
       // groupPlugins.forEach(plugin => {
         const iceModifiers = buildIceModifiers(plugin);
         // const iceLine = iceModifiers.length > 0 ? `zinit  ${iceModifiers.join(' ')}\n` : '';
-        const zinitCommand = `zinit ${iceModifiers.join(' ')+" "}for ${plugin.name}`;
+        const ice = iceModifiers.length > 0 ? `${iceModifiers.join(' ')} ` : '';
+        const zinitCommand = `zinit ${ice}for ${plugin.name}`;
         
         blocks.push(`${zinitCommand}${plugin.description ? `  # ${plugin.description}` : ''}`);
       // });
@@ -65,7 +66,6 @@ function escapeSingleQuotes(value: string): string {
 function buildIceModifiers(plugin: PluginItem): string[] {
   const modifiers = [];
   if (plugin.ice) {
-    console.log(plugin);
     if (plugin.ice.from) modifiers.push(`from${escapeSingleQuotes(plugin.ice.from)}`);
     if (plugin.ice.as) modifiers.push(`as${escapeSingleQuotes(plugin.ice.as)}`);
     if (plugin.ice.pick) modifiers.push(`pick${escapeSingleQuotes(plugin.ice.pick)}`);

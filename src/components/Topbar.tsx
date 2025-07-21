@@ -1,44 +1,71 @@
-import React from 'react';
-import { Button, Space, Dropdown } from 'antd';
-import { UploadOutlined, DownloadOutlined, EyeOutlined, FileTextOutlined, DownOutlined } from '@ant-design/icons';
+import React, { useRef } from 'react';
+import { Button, Space, message } from 'antd';
+import { UploadOutlined, DownloadOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import type { ZshConfig } from '../utils/configSchema';
 
 interface TopbarProps {
-  onImport: () => void;
-  onExport: () => void;
+  onImport: (config: ZshConfig) => void;
   onPreview: () => void;
   onDownload: () => void;
+  config: ZshConfig;
 }
 
-const Topbar: React.FC<TopbarProps> = ({ onImport, onExport, onPreview, onDownload }) => {
-  const importExportItems = [
-    {
-      key: 'import',
-      icon: <UploadOutlined />,
-      label: '导入配置',
-      onClick: onImport,
-    },
-    {
-      key: 'export',
-      icon: <DownloadOutlined />,
-      label: '导出配置',
-      onClick: onExport,
-    },
-  ];
+const Topbar: React.FC<TopbarProps> = ({ onImport, onPreview, onDownload, config }) => {
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  // 处理文件导入
+  const handleFileImport = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        onImport(json);
+        message.success('导入成功');
+      } catch {
+        message.error('配置文件格式错误');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // 处理导入按钮点击
+  const handleImportClick = () => {
+    fileInput.current?.click();
+  };
+
+  // 处理导出按钮点击
+  const handleExportClick = () => {
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'zsh_config.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    message.success('导出成功');
+  };
 
   return (
     <div className="flex items-center justify-between px-6 h-16 bg-gray-700 shadow-sm border-b">
       <div className="text-xl font-bold tracking-wide text-white">Zsh 配置生成器</div>
       <Space size="middle">
-        <Dropdown
-          menu={{
-            items: importExportItems,
+        {/* 隐藏的文件输入 */}
+        <input
+          type="file"
+          accept=".json"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileImport(file);
           }}
-          placement="bottomRight"
-        >
-          <Button icon={<UploadOutlined />}>
-            配置管理 <DownOutlined />
-          </Button>
-        </Dropdown>
+          style={{ display: 'none' }}
+          ref={fileInput}
+        />
+        <Button icon={<UploadOutlined />} onClick={handleImportClick}>
+          导入配置
+        </Button>
+        <Button icon={<DownloadOutlined />} onClick={handleExportClick}>
+          导出配置
+        </Button>
         <Button icon={<EyeOutlined />} onClick={onPreview}>
           预览zshrc
         </Button>
