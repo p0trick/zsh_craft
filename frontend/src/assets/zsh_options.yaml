@@ -1,0 +1,10 @@
+- option: setopt list_ambiguous
+  description: 补全直到出现歧义
+- option: setopt nolisttypes
+  description: 不显示类型
+- option: setopt listpacked
+  description: 紧凑显示补全列表
+- option: setopt automenu
+  description: 自动弹出补全菜单
+- option: setopt NO_BEEP
+  description: 禁用蜂鸣 

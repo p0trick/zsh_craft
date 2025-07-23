@@ -1,16 +1,27 @@
 import React, { useRef } from 'react';
 import { Button, Space, message } from 'antd';
-import { UploadOutlined, DownloadOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined, EyeOutlined, FileTextOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import type { ZshConfig } from '../utils/configSchema';
+import { appConfig } from '../config/appConfig';
 
 interface TopbarProps {
   onImport: (config: ZshConfig) => void;
   onPreview: () => void;
   onDownload: () => void;
+  onApply?: () => void;
   config: ZshConfig;
+  showApplyButton?: boolean;
 }
 
-const Topbar: React.FC<TopbarProps> = ({ onImport, onPreview, onDownload, config }) => {
+const Topbar: React.FC<TopbarProps> = ({ 
+  onImport, 
+  onPreview, 
+  onDownload, 
+  onApply,
+  config,
+  showApplyButton = false 
+}) => {
+  const [messageApi, messageContextHolder] = message.useMessage();
   const fileInput = useRef<HTMLInputElement>(null);
 
   // 处理文件导入
@@ -20,9 +31,9 @@ const Topbar: React.FC<TopbarProps> = ({ onImport, onPreview, onDownload, config
       try {
         const json = JSON.parse(e.target?.result as string);
         onImport(json);
-        message.success('导入成功');
+        messageApi.success('导入成功');
       } catch {
-        message.error('配置文件格式错误');
+        messageApi.error('配置文件格式错误');
       }
     };
     reader.readAsText(file);
@@ -42,11 +53,13 @@ const Topbar: React.FC<TopbarProps> = ({ onImport, onPreview, onDownload, config
     a.download = 'zsh_config.json';
     a.click();
     URL.revokeObjectURL(url);
-    message.success('导出成功');
+    messageApi.success('导出成功');
   };
 
   return (
-    <div className="flex items-center justify-between px-6 h-16 bg-gray-700 shadow-sm border-b">
+    <>
+      {messageContextHolder}
+      <div className="flex items-center justify-between px-6 h-16 bg-gray-700 shadow-sm border-b">
       <div className="text-xl font-bold tracking-wide text-white">Zsh 配置生成器</div>
       <Space size="middle">
         {/* 隐藏的文件输入 */}
@@ -60,20 +73,35 @@ const Topbar: React.FC<TopbarProps> = ({ onImport, onPreview, onDownload, config
           style={{ display: 'none' }}
           ref={fileInput}
         />
-        <Button icon={<UploadOutlined />} onClick={handleImportClick}>
-          导入配置
-        </Button>
-        <Button icon={<DownloadOutlined />} onClick={handleExportClick}>
-          导出配置
-        </Button>
+        {appConfig.showImportExport && (
+          <>
+            <Button icon={<UploadOutlined />} onClick={handleImportClick}>
+              导入配置
+            </Button>
+            <Button icon={<DownloadOutlined />} onClick={handleExportClick}>
+              导出配置
+            </Button>
+          </>
+        )}
         <Button icon={<EyeOutlined />} onClick={onPreview}>
           预览zshrc
         </Button>
         <Button icon={<FileTextOutlined />} type="primary" onClick={onDownload}>
           下载zshrc
         </Button>
+        {showApplyButton && onApply && (
+          <Button 
+            icon={<PlayCircleOutlined />} 
+            type="primary" 
+            danger
+            onClick={onApply}
+          >
+            应用zshrc
+          </Button>
+        )}
       </Space>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Input, Space, Popconfirm, Form, Select, Tooltip, message } from 'antd';
+import { Table, Button, Input, Space, Popconfirm, Form, Select, Tooltip, message, AutoComplete } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { AliasItem } from '../utils/configSchema';
 import { loadYamlFile } from '../utils/yamlLoader';
@@ -18,8 +18,9 @@ const AliasTable: React.FC<AliasTableProps> = ({ value, onChange }) => {
   useEffect(() => { setData(value); }, [value]);
   useEffect(() => {
     loadYamlFile<AliasItem[]>('/src/assets/alias.yaml').then((data) => {
-      setCommonAlias(data);
-    }).catch(() => {
+      setCommonAlias(Array.isArray(data) ? data : []);
+    }).catch((error) => {
+      console.error('Failed to load aliases:', error);
       setCommonAlias([]);
       // 调用antd的错误通知
       message.error('加载别名失败，请检查文件路径');
@@ -64,36 +65,35 @@ const AliasTable: React.FC<AliasTableProps> = ({ value, onChange }) => {
 
   const columns = [
     {
-      title: '原命令',
+      title: '别名',
       dataIndex: 'name',
       width: 120,
       editable: true,
       render: (_: any, record: AliasItem) => {
         if (!isEditing(record)) return record.name;
         return (
-          <Form.Item name="name" style={{ margin: 0 }} rules={[{ required: true, message: '请输入原命令' }]}> 
-            <Select
-              showSearch
-              allowClear
-              placeholder="选择或输入命令"
-              style={{ width: 100 }}
+          <Form.Item name="name" style={{ margin: 0 }} rules={[{ required: true, message: '请输入别名' }]}> 
+            <AutoComplete
+              placeholder="选择或输入别名"
+              style={{ width: 120 }}
               options={commonAlias.map(a => ({ value: a.name, label: a.name }))}
               filterOption={(input, option) => (option?.label as string).includes(input)}
+              allowClear
             />
           </Form.Item>
         );
       },
     },
     {
-      title: '别名',
+      title: '命令',
       dataIndex: 'alias',
       width: 120,
       editable: true,
       render: (_: any, record: AliasItem) => {
         if (!isEditing(record)) return record.alias;
         return (
-          <Form.Item name="alias" style={{ margin: 0 }} rules={[{ required: true, message: '请输入别名' }]}> 
-            <Input placeholder="别名" style={{ width: 100 }} />
+          <Form.Item name="alias" style={{ margin: 0 }} rules={[{ required: true, message: '请输入命令' }]}> 
+            <Input placeholder="命令" style={{ width: 100 }} />
           </Form.Item>
         );
       },

@@ -1,4 +1,4 @@
-import type { ZshConfig, AliasItem, PathVarItem, EnvVarItem, PluginItem, ZshOptionItem } from '../utils/configSchema';
+import type { ZshConfig, AliasItem, PathVarItem, EnvVarItem, PluginItem, ZshOptionItem } from './configSchema';
 
 function generatePluginBlocks(plugins: PluginItem[]): string[] {
   const blocks: string[] = [];
@@ -159,9 +159,9 @@ zinit load starship/starship\n### End of Zinit's installer chunk\n`;
   // 拼接所有部分
   return [
     zinitInitBlock,
-    aliasBlock,
-    pathBlock,
     envBlock,
+    pathBlock,
+    aliasBlock,
     zshOptBlock,
     pluginBlock,
     initScriptBlock,
