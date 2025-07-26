@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Button, Space, message } from 'antd';
-import { UploadOutlined, DownloadOutlined, EyeOutlined, FileTextOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { UploadOutlined, DownloadOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
 import type { ZshConfig } from '../utils/configSchema';
 import { appConfig } from '../config/appConfig';
 
@@ -8,18 +8,14 @@ interface TopbarProps {
   onImport: (config: ZshConfig) => void;
   onPreview: () => void;
   onDownload: () => void;
-  onApply?: () => void;
   config: ZshConfig;
-  showApplyButton?: boolean;
 }
 
 const Topbar: React.FC<TopbarProps> = ({ 
   onImport, 
   onPreview, 
   onDownload, 
-  onApply,
-  config,
-  showApplyButton = false 
+  config
 }) => {
   const [messageApi, messageContextHolder] = message.useMessage();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -89,16 +85,6 @@ const Topbar: React.FC<TopbarProps> = ({
         <Button icon={<FileTextOutlined />} type="primary" onClick={onDownload}>
           下载zshrc
         </Button>
-        {showApplyButton && onApply && (
-          <Button 
-            icon={<PlayCircleOutlined />} 
-            type="primary" 
-            danger
-            onClick={onApply}
-          >
-            应用zshrc
-          </Button>
-        )}
       </Space>
       </div>
     </>

@@ -1,0 +1,208 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送以v开头的标签时触发
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          cache: true
+          
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+        
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+        
+      - name: Build backend for multiple platforms
+        working-directory: ./backend
+        run: |
+          # 构建多个平台的可执行文件
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o zsh_craft_linux_amd64 main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o zsh_craft_linux_arm64 main.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o zsh_craft_darwin_amd64 main.go
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o zsh_craft_darwin_arm64 main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o zsh_craft_windows_amd64.exe main.go
+          
+      - name: Create release assets
+        run: |
+          # 创建发布目录
+          mkdir -p release
+          
+          # 复制可执行文件
+          cp backend/zsh_craft_* release/
+          
+          # 创建安装脚本
+          cat > release/install.sh << 'EOF'
+          #!/bin/bash
+          
+          # Zsh Craft 安装脚本
+          echo "🚀 正在安装 Zsh Craft..."
+          
+          # 检测操作系统和架构
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m)
+          
+          case $ARCH in
+            x86_64) ARCH="amd64" ;;
+            aarch64) ARCH="arm64" ;;
+            arm64) ARCH="arm64" ;;
+          esac
+          
+          # 确定可执行文件名
+          if [ "$OS" = "darwin" ]; then
+            BINARY="zsh_craft_darwin_${ARCH}"
+          elif [ "$OS" = "linux" ]; then
+            BINARY="zsh_craft_linux_${ARCH}"
+          else
+            echo "❌ 不支持的操作系统: $OS"
+            exit 1
+          fi
+          
+          # 检查可执行文件是否存在
+          if [ ! -f "$BINARY" ]; then
+            echo "❌ 找不到适合您系统的可执行文件: $BINARY"
+            echo "可用的文件:"
+            ls -la zsh_craft_*
+            exit 1
+          fi
+          
+          # 创建安装目录
+          INSTALL_DIR="/usr/local/bin"
+          if [ ! -w "$INSTALL_DIR" ]; then
+            echo "需要管理员权限安装到 $INSTALL_DIR"
+            sudo mkdir -p "$INSTALL_DIR"
+          fi
+          
+          # 复制可执行文件
+          if [ -w "$INSTALL_DIR" ]; then
+            cp "$BINARY" "$INSTALL_DIR/zsh_craft"
+          else
+            sudo cp "$BINARY" "$INSTALL_DIR/zsh_craft"
+          fi
+          
+          # 设置执行权限
+          if [ -w "$INSTALL_DIR" ]; then
+            chmod +x "$INSTALL_DIR/zsh_craft"
+          else
+            sudo chmod +x "$INSTALL_DIR/zsh_craft"
+          fi
+          
+          echo "✅ Zsh Craft 安装成功！"
+          echo "使用方法: zsh_craft"
+          echo "访问地址: http://localhost:8080"
+          EOF
+          
+          # 创建Windows安装脚本
+          cat > release/install.bat << 'EOF'
+          @echo off
+          echo 🚀 正在安装 Zsh Craft...
+          
+          REM 检测架构
+          if "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+            set BINARY=zsh_craft_windows_amd64.exe
+          ) else (
+            set BINARY=zsh_craft_windows_amd64.exe
+          )
+          
+          REM 检查可执行文件是否存在
+          if not exist "%BINARY%" (
+            echo ❌ 找不到适合您系统的可执行文件: %BINARY%
+            echo 可用的文件:
+            dir zsh_craft_*.exe
+            pause
+            exit /b 1
+          )
+          
+          REM 创建安装目录
+          set INSTALL_DIR=%PROGRAMFILES%\ZshCraft
+          if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
+          
+          REM 复制可执行文件
+          copy "%BINARY%" "%INSTALL_DIR%\zsh_craft.exe"
+          
+          REM 添加到PATH
+          setx PATH "%PATH%;%INSTALL_DIR%"
+          
+          echo ✅ Zsh Craft 安装成功！
+          echo 使用方法: zsh_craft
+          echo 访问地址: http://localhost:8080
+          pause
+          EOF
+          
+          # 创建README
+          cat > release/README.md << 'EOF'
+          # Zsh Craft Release
+
+          ## 安装说明
+
+          ### Linux/macOS
+          ```bash
+          chmod +x install.sh
+          ./install.sh
+          ```
+
+          ### Windows
+          ```cmd
+          install.bat
+          ```
+
+          ## 使用方法
+
+          安装完成后，运行以下命令启动服务：
+          ```bash
+          zsh_craft
+          ```
+
+          然后在浏览器中访问：http://localhost:8080
+
+          ## 支持的系统
+
+          - Linux (amd64, arm64)
+          - macOS (amd64, arm64)
+          - Windows (amd64)
+
+          ## 文件说明
+
+          - `zsh_craft_*`: 各平台的可执行文件
+          - `install.sh`: Linux/macOS 安装脚本
+          - `install.bat`: Windows 安装脚本
+          - `README.md`: 本说明文件
+          EOF
+          
+          # 设置脚本执行权限
+          chmod +x release/install.sh
+          
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/zsh_craft_*
+            release/install.sh
+            release/install.bat
+            release/README.md
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

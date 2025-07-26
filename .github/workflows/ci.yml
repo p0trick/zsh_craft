@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          cache: true
+          
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+        
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm test -- --watchAll=false --coverage
+        env:
+          CI: true
+          
+      - name: Run frontend lint
+        working-directory: ./frontend
+        run: npm run lint || true
+        
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+        
+      - name: Run backend tests
+        working-directory: ./backend
+        run: go test -v ./...
+        
+      - name: Run backend vet
+        working-directory: ./backend
+        run: go vet ./...
+        
+      - name: Run backend fmt check
+        working-directory: ./backend
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "Code is not formatted. Please run 'go fmt ./...'"
+            gofmt -s -l .
+            exit 1
+          fi
+          
+      - name: Build backend
+        working-directory: ./backend
+        run: go build -o zsh_craft main.go
+        
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage 

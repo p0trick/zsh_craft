@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { ZshConfig } from "../utils/configSchema";
 import { appConfig } from "../config/appConfig";
 import { message } from "antd";
+import { generateZshrc } from "../utils/zshrcGenerator";
 
 // 默认配置
 const defaultConfig: ZshConfig = {
@@ -60,13 +61,15 @@ const loadConfigFromServer = async (): Promise<ZshConfig> => {
 // 保存配置到服务器
 const saveConfigToServer = async (config: ZshConfig): Promise<boolean> => {
   try {
-    const response = await fetch('/api/save_config', {
+    const zshrc = generateZshrc(config);
+    const response = await fetch('/api/apply_config', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        config: JSON.stringify(config),
+        zshrc_content: zshrc,
+        zsh_config: JSON.stringify(config),
       }),
     });
 
