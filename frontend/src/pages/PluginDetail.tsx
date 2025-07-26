@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Form, Input, Button, Select, Switch, Space, Divider, message, Modal, Table, Popconfirm } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { useConfig } from '../context/ConfigContext';
 import type { PluginItem, EnvVarItem } from '../utils/configSchema';
 

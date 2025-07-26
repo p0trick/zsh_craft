@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu } from 'antd';
 import { HomeOutlined, SettingOutlined, BranchesOutlined, CodeOutlined, AppstoreOutlined, FileTextOutlined, ToolOutlined, FolderOutlined } from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 const menuItems = [
   { key: '/', icon: <HomeOutlined />, label: '首页' },

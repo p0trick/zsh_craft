@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Button, Table, Space, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useConfig } from '../context/ConfigContext';
 import type { PluginItem } from '../utils/configSchema';
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, ConfigProvider, Spin } from 'antd';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Home from './pages/Home';

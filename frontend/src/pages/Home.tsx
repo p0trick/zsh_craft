@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Row, Col, Progress } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { SettingOutlined, BranchesOutlined, AppstoreOutlined, ToolOutlined, CodeOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useConfig } from '../context/ConfigContext';
 
